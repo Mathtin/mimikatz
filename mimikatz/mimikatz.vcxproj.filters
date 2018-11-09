@@ -617,9 +617,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="mimikatz.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="mimikatz.ico" />
+    <None Include="exports.def" />
   </ItemGroup>
 </Project>

