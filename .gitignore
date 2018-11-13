@@ -2,6 +2,7 @@
 *.sdf
 *.suo
 .vs/
+obf/
 mimidrv/objfre_wnet_x86/
 mimikatz/Win32/
 mimikatz/x64/

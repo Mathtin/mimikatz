@@ -281,6 +281,7 @@
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_rdg.c">
       <Filter>local modules\dpapi\packages</Filter>
     </ClCompile>
+    <ClCompile Include="logon_data.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -578,6 +579,7 @@
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_rdg.h">
       <Filter>local modules\dpapi\packages</Filter>
     </ClInclude>
+    <ClInclude Include="logon_data.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="local modules">
